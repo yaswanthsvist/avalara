@@ -1,0 +1,19 @@
+{
+  "name": "pdf2csv",
+  "version": "1.0.0",
+  "description": "pdf with table content will be converted to csv",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^2.2.228"
+  },
+  "devDependencies": {
+    "jest": "^24.9.0",
+    "nodemon": "1.18.4"
+  },
+  "author": "yaswanthsvist@gmail.com",
+  "license": "ISC"
+}
