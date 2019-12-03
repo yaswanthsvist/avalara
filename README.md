@@ -17,5 +17,5 @@ once you run the above code you can find the output files in csv folder.
 output file is optional, you can skip this, by default its csv/output.csv
 ## Tests
 ```
-npm run jest
+npm run test
 ```
