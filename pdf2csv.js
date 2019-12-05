@@ -1,5 +1,14 @@
-var pdfjsLib = require('pdfjs-dist')
+const pdfjsLib = require('pdfjs-dist')
 var fs = require('fs')
+
+function PDFTableToCSV(pdfPath, csvPath) {
+  this.X_POSITION = 4
+  this.Y_POSITION = 5
+  this.gridColumnGap = 4
+  this.lineSpacing = 3
+  this.pdfPath = pdfPath
+  this.csvPath = csvPath
+}
 
 const getCoordinates = function(item) {
   const { transform, width, height, str: text } = item
@@ -113,14 +122,6 @@ const generateCsvTextFromIndex2Column = function(index2Column) {
     },
     { csvTextContent: '', prevColumn: 1, prevY: 0, prevStartY: Infinity }
   )
-}
-function PDFTableToCSV(pdfPath, csvPath) {
-  this.X_POSITION = 4
-  this.Y_POSITION = 5
-  this.gridColumnGap = 4
-  this.lineSpacing = 3
-  this.pdfPath = pdfPath
-  this.csvPath = csvPath
 }
 const getItemsInAllPages = async function() {
   return new Promise(async (resolve, reject) =>
