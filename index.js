@@ -1,6 +1,6 @@
-const pdf2csv = require('./pdf2csv');
+const pdf2csv = require('./pdf2csv')
 
-var pdfPath = process.argv[2] || './pdfs/test.pdf';
-var csvPath = process.argv[3] || './csv/output.csv';
+var pdfPath = process.argv[2] || './pdfs/tests.pdf'
+var csvPath = process.argv[3] || './csv/output.csv'
 
-pdf2csv.pdfTableToCsv(pdfPath, csvPath);
+pdf2csv.pdfTableToCsv(pdfPath, csvPath)
