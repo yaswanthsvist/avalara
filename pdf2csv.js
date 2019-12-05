@@ -1,16 +1,11 @@
 var pdfjsLib = require('pdfjs-dist')
 var fs = require('fs')
 
-const X_POSITION = 4
-const Y_POSITION = 5
-const gridColumnGap = 4
-const lineSpacing = 3
-
-const getCoordinates = item => {
+const getCoordinates = function(item) {
   const { transform, width, height, str: text } = item
-  const startX = transform[X_POSITION]
-  const endX = transform[X_POSITION] + width
-  const startY = transform[Y_POSITION]
+  const startX = transform[this.X_POSITION]
+  const endX = transform[this.X_POSITION] + width
+  const startY = transform[this.Y_POSITION]
   return { text, startX, endX, startY, height }
 }
 
@@ -27,53 +22,62 @@ const generateElevationReducer = (
   return acc
 }
 
-const getElevation = itemsInAllPages =>
-  itemsInAllPages.map(getCoordinates).reduce(generateElevationReducer, {})
-const getColumns = elevation => (acc, xPosition) => {
-  let { index2Column, column, columns, height } = acc
-  let { columnEnd, columnStart } = columns[column] || {}
-  if (!columnStart) {
-    columnStart = xPosition
-  }
-  const { steps, channel } = elevation[xPosition]
-  if (height + steps === 0) {
-    columnEnd = xPosition
-  }
-  columns[column] = { columnEnd, columnStart }
-  if (height === 0) {
-    const gap = Math.round((xPosition - columnEnd) * 10) / 10
-    if (gridColumnGap < gap) {
-      column++
-    }
-  }
-  height += steps
-  channel &&
-    channel.map(({ index, text, startY, height: fontHeight }) => {
-      index2Column[index] = { column, text, startY, height: fontHeight }
-    })
-  return { index2Column, column, columns, height }
+const getElevation = function(itemsInAllPages) {
+  const self = this
+  return itemsInAllPages
+    .map(self.getCoordinates.bind(self))
+    .reduce(generateElevationReducer, {})
 }
-const elevation2Column = elevation =>
-  Object.keys(elevation)
+
+const getColumns = function(elevation) {
+  const self = this
+  return (acc, xPosition) => {
+    let { index2Column, column, columns, height } = acc
+    let { columnEnd, columnStart } = columns[column] || {}
+    if (!columnStart) {
+      columnStart = xPosition
+    }
+    const { steps, channel } = elevation[xPosition]
+    if (height + steps === 0) {
+      columnEnd = xPosition
+    }
+    columns[column] = { columnEnd, columnStart }
+    if (height === 0) {
+      const gap = Math.round((xPosition - columnEnd) * 10) / 10
+      if (self.gridColumnGap < gap) {
+        column++
+      }
+    }
+    height += steps
+    channel &&
+      channel.map(({ index, text, startY, height: fontHeight }) => {
+        index2Column[index] = { column, text, startY, height: fontHeight }
+      })
+    return { index2Column, column, columns, height }
+  }
+}
+
+const elevation2Column = function(elevation) {
+  return Object.keys(elevation)
     .map(x => parseFloat(x))
     .sort((a, b) => (a > b ? 1 : -1))
-    .reduce(getColumns(elevation), {
+    .reduce(this.getColumns(elevation), {
       index2Column: [],
       columns: [],
       column: 0,
       height: 0,
       prevHeight: Infinity,
     })
+}
 
-let sameColumn = []
-const generateCsvTextFromIndex2Column = index2Column =>
-  index2Column.reduce(
+const generateCsvTextFromIndex2Column = function(index2Column) {
+  const self = this
+  let sameColumn = []
+  return index2Column.reduce(
     (acc, { column, text, startY, height }, index) => {
-      let csvTextContent = acc.text
-      const { prevColumn, prevStartY } = acc
+      let { prevColumn, prevStartY, csvTextContent } = acc
       let diff = column - prevColumn
-
-      if (diff === 0 && prevStartY - startY - height > lineSpacing) {
+      if (diff === 0 && prevStartY - startY - height > self.lineSpacing) {
         diff = -1
       }
       if (diff !== 0 && sameColumn.length > 0) {
@@ -105,34 +109,66 @@ const generateCsvTextFromIndex2Column = index2Column =>
           ? '"' + sameColumn.join('\n') + '"'
           : ''
 
-      return { text: csvTextContent, prevColumn: column, prevStartY: startY }
+      return { csvTextContent, prevColumn: column, prevStartY: startY }
     },
-    { text: '', prevColumn: 1, prevY: 0, prevStartY: Infinity }
+    { csvTextContent: '', prevColumn: 1, prevY: 0, prevStartY: Infinity }
   )
-const pdfTableToCsv = async (pdfPath, csvPath) => {
-  pdfjsLib.getDocument(pdfPath).promise.then(async function(doc) {
-    var numPages = doc.numPages
-    let itemsInAllPages = []
+}
+function PDFTableToCSV(pdfPath, csvPath) {
+  this.X_POSITION = 4
+  this.Y_POSITION = 5
+  this.gridColumnGap = 4
+  this.lineSpacing = 3
+  this.pdfPath = pdfPath
+  this.csvPath = csvPath
+}
+const getItemsInAllPages = async function() {
+  return new Promise(async (resolve, reject) =>
+    pdfjsLib.getDocument(this.pdfPath).promise.then(async function(doc) {
+      var numPages = doc.numPages
+      let itemsInAllPages = []
 
-    for (let i = 1; i <= numPages; i++) {
-      var page = await doc.getPage(i)
-      const content = await page.getTextContent()
-      content.items.map(x => itemsInAllPages.push(x))
-    }
-    const elevation = getElevation(itemsInAllPages)
-    const { index2Column } = elevation2Column(elevation)
-    const { text } = generateCsvTextFromIndex2Column(index2Column)
-    fs.writeFile(csvPath, text, () => {
-      console.log('PDF Table to csv conversion completed')
-    })
+      for (let i = 1; i <= numPages; i++) {
+        var page = await doc.getPage(i)
+        const content = await page.getTextContent()
+        content.items.map(x => itemsInAllPages.push(x))
+      }
+      resolve(itemsInAllPages)
+    }, reject)
+  )
+}
+const getTextFromItems = function(itemsInAllPages) {
+  const elevation = this.getElevation(itemsInAllPages)
+  const { index2Column } = this.elevation2Column(elevation)
+  const { csvTextContent } = this.generateCsvTextFromIndex2Column(index2Column)
+  return csvTextContent
+}
+const writeTextToCSVFile = function(text) {
+  return new Promise((resolve, reject) => {
+    fs &&
+      fs.writeFile(this.csvPath, text, err => {
+        if (err) reject(err)
+        resolve(true)
+      })
   })
 }
 
-module.exports = {
-  pdfTableToCsv,
+const convert = async function() {
+  const itemsInAllPages = await this.getItemsInAllPages()
+  const text = this.getTextFromItems(itemsInAllPages)
+  return await this.writeTextToCSVFile(text)
+}
+
+Object.assign(PDFTableToCSV.prototype, {
+  convert,
   getElevation,
+  getItemsInAllPages,
+  getTextFromItems,
+  getColumns,
+  writeTextToCSVFile,
   generateElevationReducer,
   elevation2Column,
   generateCsvTextFromIndex2Column,
   getCoordinates,
-}
+})
+module.exports = PDFTableToCSV
