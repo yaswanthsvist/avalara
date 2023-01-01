@@ -8,7 +8,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "pdfjs-dist": "^2.2.228"
+    "pdfjs-dist": "^2.16.105"
   },
   "devDependencies": {
     "jest": "^24.9.0",
